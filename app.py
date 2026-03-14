@@ -89,7 +89,7 @@ O que fazer agora:
     - Lavar as folhas para reduzir a população inicial.
     - Remover folhas severamente atacadas.
 
-Manejo preventivo:"
+Manejo preventivo:
     - Evitar estresse hídrico da planta.
     - Reduzir poeira no ambiente.
     - Manter irrigação adequada.
@@ -156,45 +156,53 @@ conn.commit()
 st.subheader("Envie uma imagem da planta")
 
 uploaded_file = st.file_uploader(
-"Selecione a imagem",
-type=["jpg","jpeg","png"]
+    "Selecione a imagem",
+    type=["jpg", "jpeg", "png"]
 )
 
 if uploaded_file is not None:
 
     img = Image.open(uploaded_file).convert("RGB")
-    st.image(img)
+    nome_imagem = uploaded_file.name
 
-    if st.button("Analisar"):
+    st.image(img, width=400)
 
-        with st.spinner("Analisando imagem..."):
+    with st.form("analise_form"):
+        analisar = st.form_submit_button("Analisar")
 
-            img = img.resize((224,224))
-            img_array = np.array(img)/255.0
-            img_array = np.expand_dims(img_array, axis=0)
+        if analisar:
 
-            pred = model.predict(img_array)[0]
+            with st.spinner("Analisando imagem..."):
 
-            idx = np.argmax(pred)
+                img = img.resize((224,224))
+                img_array = np.array(img)/255.0
+                img_array = np.expand_dims(img_array, axis=0)
 
-            praga = classes[idx]
-            conf = pred[idx]*100
+                pred = model.predict(img_array)[0]
 
-            recomendacao = recomendacoes.get(praga,"Sem recomendação.")
+                idx = np.argmax(pred)
 
-            data = datetime.now().strftime("%d/%m/%Y %H:%M")
+                praga = classes[idx]
+                conf = float(pred[idx]*100)
 
-            cursor.execute(
-                "INSERT INTO diagnosticos VALUES (NULL,?,?,?,?,?)",
-                (uploaded_file.name,praga,float(conf),recomendacao,data)
-            )
+                recomendacao = recomendacoes.get(praga,"Sem recomendação.")
+
+                st.success(f"Diagnóstico: {praga}")
+                st.write(f"Confiança: {conf:.2f}%")
+                st.markdown(recomendacao)
+            # SALVAR NO BANCO
+            cursor.execute("""
+            INSERT INTO diagnosticos (nome_imagem, praga, confianca, recomendacao, data_analise)
+            VALUES (?, ?, ?, ?, ?)
+            """, (
+            nome_imagem,
+            praga,
+            conf,
+            recomendacao,
+            datetime.now().strftime("%d/%m/%Y %H:%M")
+            ))
 
             conn.commit()
-
-            st.success(f"Diagnóstico: {praga}")
-            st.write(f"Confiança: {conf:.2f}%")
-            st.write("Recomendação:")
-            st.write(recomendacao)
 
 st.markdown("---")
 st.subheader("Histórico de diagnósticos")
@@ -203,4 +211,4 @@ cursor.execute("SELECT * FROM diagnosticos ORDER BY id DESC LIMIT 5")
 rows = cursor.fetchall()
 
 for row in rows:
-    st.write(f"{row[5]} - {row[2]} ({float(row[3]):.2f}%)")
+    st.write(f"{row[5]} - {row[2]} ({row[3]}%)")
