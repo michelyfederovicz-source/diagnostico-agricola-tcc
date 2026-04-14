@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
 
 train_dir = "dataset/treino"
