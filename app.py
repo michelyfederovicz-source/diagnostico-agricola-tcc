@@ -21,66 +21,15 @@ if not os.path.exists(MODEL_PATH):
 model = tf.keras.models.load_model(MODEL_PATH)
 
 classes = [
-"Planta saudável",
-"Pulgões",
-"Lagartas",
 "Ácaros",
 "Estresse hídrico",
-"Formiga cortadeira"
+"Formiga cortadeira",
+"Lagartas",
+"Planta saudável",
+"Pulgões"
 ]
 
 recomendacoes = {
-"Planta saudável": """
-Situação identificada:
-A planta apresenta bom desenvolvimento, coloração adequada e ausência de sinais visíveis de pragas, doenças ou estresse hídrico.
-
-O que fazer agora:
-- Manter o manejo atual da cultura.
-- Realizar inspeções visuais semanais.
-- Remover folhas secas ou danificadas.
-- Manter irrigação e adubação equilibradas.
-
-Boas práticas preventivas:
-- Rotação de culturas.
-- Uso de cobertura vegetal no solo.
-- Manutenção da limpeza da área.
-
-Observação:
-O monitoramento contínuo ajuda a prevenir problemas futuros.
-""",
-
-"Pulgões": """
-O que isso causa: Os pulgões sugam a seiva da planta, enfraquecendo seu crescimento e podendo causar deformação das folhas.
-
-O que fazer agora (ações imediatas):
-    - Lavar as folhas com água para remover os insetos.
-    - Remover manualmente folhas muito infestadas.
-    - Evitar excesso de adubação nitrogenada.
-
-Manejo de baixo risco:
-    - Utilizar soluções caseiras de sabão neutro diluído em água.
-    - Aplicar óleo vegetal diluído para dificultar a fixação dos insetos.
-    - Incentivar inimigos naturais, como joaninhas.
-
-Atenção: Caso a infestação aumente rapidamente, recomenda-se buscar orientação técnica local (extensão rural ou cooperativa).
-""",
-
-"Lagartas":"""
-O que isso causa: As lagartas se alimentam das folhas, reduzindo a área fotossintética e prejudicando o desenvolvimento da planta.
-
-O que fazer agora:
-    - Inspecionar as plantas no início da manhã ou final da tarde.
-    - Retirar lagartas manualmente sempre que possível.
-    - Remover folhas muito danificadas.
-
-Boas práticas de manejo:
-    - Manter a área limpa, sem restos de cultura.
-    - Utilizar barreiras físicas simples.
-    - Realizar monitoramento frequente da lavoura.
-
-Atenção: Em casos de infestação intensa, buscar apoio técnico especializado.
-""",
-
 "Ácaros":"""
 O que isso causa: Os ácaros provocam manchas amareladas, aspecto ressecado e reduzem a capacidade fotossintética da planta.
 
@@ -134,8 +83,58 @@ Manejo de baixo risco e preventivo:
 Atenção: Em infestações grandes ou em lavouras comerciais, o monitoramento constante é essencial. Caso o ataque persista ou cause perdas significativas, recomenda-se buscar orientação técnica local (Embrapa, Emater, extensionistas rurais ou cooperativa agrícola) para avaliar manejo integrado. Evite uso indiscriminado de formicidas químicos para preservar inimigos naturais e saúde do solo.
 
 Observação: O manejo integrado e preventivo é a melhor estratégia a longo prazo. Formigas cortadeiras fazem parte do ecossistema e só viram praga em áreas desequilibradas (monoculturas, solo pobre). Pequenas ações culturais podem reduzir drasticamente os danos sem agredir o ambiente.
-"""
-}
+""",
+
+"Lagartas":"""
+O que isso causa: As lagartas se alimentam das folhas, reduzindo a área fotossintética e prejudicando o desenvolvimento da planta.
+
+O que fazer agora:
+    - Inspecionar as plantas no início da manhã ou final da tarde.
+    - Retirar lagartas manualmente sempre que possível.
+    - Remover folhas muito danificadas.
+
+Boas práticas de manejo:
+    - Manter a área limpa, sem restos de cultura.
+    - Utilizar barreiras físicas simples.
+    - Realizar monitoramento frequente da lavoura.
+
+Atenção: Em casos de infestação intensa, buscar apoio técnico especializado.
+""",
+
+"Planta saudável": """
+Situação identificada:
+A planta apresenta bom desenvolvimento, coloração adequada e ausência de sinais visíveis de pragas, doenças ou estresse hídrico.
+
+O que fazer agora:
+- Manter o manejo atual da cultura.
+- Realizar inspeções visuais semanais.
+- Remover folhas secas ou danificadas.
+- Manter irrigação e adubação equilibradas.
+
+Boas práticas preventivas:
+- Rotação de culturas.
+- Uso de cobertura vegetal no solo.
+- Manutenção da limpeza da área.
+
+Observação:
+O monitoramento contínuo ajuda a prevenir problemas futuros.
+""",
+
+"Pulgões": """
+O que isso causa: Os pulgões sugam a seiva da planta, enfraquecendo seu crescimento e podendo causar deformação das folhas.
+
+O que fazer agora (ações imediatas):
+    - Lavar as folhas com água para remover os insetos.
+    - Remover manualmente folhas muito infestadas.
+    - Evitar excesso de adubação nitrogenada.
+
+Manejo de baixo risco:
+    - Utilizar soluções caseiras de sabão neutro diluído em água.
+    - Aplicar óleo vegetal diluído para dificultar a fixação dos insetos.
+    - Incentivar inimigos naturais, como joaninhas.
+
+Atenção: Caso a infestação aumente rapidamente, recomenda-se buscar orientação técnica local (extensão rural ou cooperativa).
+"""}
 
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
@@ -180,15 +179,25 @@ if uploaded_file is not None:
 
                 pred = model.predict(img_array)[0]
 
+                for i, valor in enumerate(pred):
+                    st.write(f"{classes[i]}: {valor*100:.2f}%")
+
                 idx = np.argmax(pred)
 
                 praga = classes[idx]
-                conf = float(pred[idx]*100)
+                conf = float(pred[idx] * 100)
 
-                recomendacao = recomendacoes.get(praga,"Sem recomendação.")
+                recomendacao = recomendacoes.get(praga, "Sem recomendação.")
+
+                if conf < 60:
+                    st.warning(
+                        "Baixa confiança. A imagem pode não estar clara ou o modelo não tem certeza do diagnóstico."
+                    )
 
                 st.success(f"Diagnóstico: {praga}")
                 st.write(f"Confiança: {conf:.2f}%")
+
+                st.subheader("Recomendações")
                 st.markdown(recomendacao)
             # SALVAR NO BANCO
             cursor.execute("""
