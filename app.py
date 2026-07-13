@@ -9,10 +9,15 @@ import os
 MODEL_PATH = "modelo/modelo_mobilenet.h5"
 DB_PATH = "banco/diagnostico_agricola.db"
 
-st.set_page_config(page_title="Diagnóstico Agrícola IA", page_icon="🌱")
+col1, col2, col3 = st.columns([1,2,1])
 
-st.title("🌱 Diagnóstico Agrícola com IA")
+with col2:
+    st.image("logo.png", width=250)
+
+st.title("🌱 Diagnóstico Agrícola com IA 🌱")
 st.markdown("TCC - Michely Federovicz")
+
+aba1, aba2 = st.tabs(["🔍 Diagnóstico", "📋 Histórico"])
 
 if not os.path.exists(MODEL_PATH):
     st.error("Modelo não encontrado. Treine o modelo primeiro.")
@@ -152,9 +157,11 @@ data_analise TEXT
 
 conn.commit()
 
-st.subheader("Envie uma imagem da planta")
+with aba1:
 
-uploaded_file = st.file_uploader(
+    st.subheader("Envie uma imagem da planta")
+
+    uploaded_file = st.file_uploader(
     "Selecione a imagem",
     type=["jpg", "jpeg", "png"]
 )
@@ -178,9 +185,6 @@ if uploaded_file is not None:
                 img_array = np.expand_dims(img_array, axis=0)
 
                 pred = model.predict(img_array)[0]
-
-                for i, valor in enumerate(pred):
-                    st.write(f"{classes[i]}: {valor*100:.2f}%")
 
                 idx = np.argmax(pred)
 
@@ -213,11 +217,23 @@ if uploaded_file is not None:
 
             conn.commit()
 
-st.markdown("---")
-st.subheader("Histórico de diagnósticos")
+with aba2:
 
-cursor.execute("SELECT * FROM diagnosticos ORDER BY id DESC LIMIT 5")
-rows = cursor.fetchall()
+    st.subheader("📋 Histórico de diagnósticos")
 
-for row in rows:
-    st.write(f"{row[5]} - {row[2]} ({row[3]}%)")
+    cursor.execute("""
+    SELECT *
+    FROM diagnosticos
+    ORDER BY id DESC
+    LIMIT 10
+    """)
+
+    rows = cursor.fetchall()
+
+    for row in rows:
+
+        st.markdown("---")
+
+        st.write(f"📅 Data: {row[5]}")
+        st.write(f"🌱 Diagnóstico: {row[2]}")
+        st.write(f"🎯 Confiança: {row[3]}%")
